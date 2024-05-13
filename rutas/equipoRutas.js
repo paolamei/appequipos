@@ -132,45 +132,39 @@ rutas.get('/equipospormarca', async (req, res) => {
 });
 // cantidad total de equipos y la fecha de registro más reciente por cada año y marca
 rutas.get('/equiposconfecha', async (req, res) => {
-  try {
-    const resultado = await EquipoModel.aggregate([
-        {
-            $project: {
-                year: { $year: { $dateFromString: { dateString: { $concat: [{ $substrCP: ["$FECHA_REG", 6, 4] }, "-", { $substrCP: ["$FECHA_REG", 3, 2] }, "-", { $substrCP: ["$FECHA_REG", 0, 2] }] } } } },
-                MARCA: 1
+    try {
+        const resultado = await EquipoModel.aggregate([
+            {
+                $group: {
+                    _id: { year: { $year: "$FECHA_REG" }, MARCA: "$MARCA" },
+                    totalEquipos: { $sum: 1 },
+                    ultimaFechaRegistro: { $max: "$FECHA_REG" }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, totalEquipos: -1 }
             }
-        },
-        {
-            $group: {
-                _id: { year: "$year", MARCA: "$MARCA" },
-                totalEquipos: { $sum: 1 },
-                ultimaFechaRegistro: { $max: { $dateFromString: { dateString: { $concat: [{ $substrCP: ["$FECHA_REG", 6, 4] }, "-", { $substrCP: ["$FECHA_REG", 3, 2] }, "-", { $substrCP: ["$FECHA_REG", 0, 2] }] } } } }
-            }
-        },
-        {
-            $sort: { "_id.year": 1, totalEquipos: -1 }
-        }
-    ]);
-    res.json(resultado);
-} catch (error) {
-    res.status(500).json({ message: error.message });
-}
+        ]);
+        res.json(resultado);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
-//por rango de fechas
-rutas.get('/equiposfecha/:fechaini/:fechafin', async (req, res) => {
-  const  fechaini = req.params.fechaini;
-  const fechafin  = req.params.fechafin;
-  try {
-      const equipos = await EquipoModel.find({
-          $and: [
-              { FECHA_REG: { $gte: fechaini } },
-              { FECHA_REG: { $lte: fechafin } }
-          ]
-      });
-      res.json(equipos);
-  } catch (error) {
-      res.status(500).json({ message: error.message });
-  }
+//por rango de fechas de registro
+rutas.get('/equiposfechareg', async (req, res) => {
+    const { fechaInicio, fechaFin } = req.query;
+    
+    try {
+        const equipos = await EquipoModel.find({
+            FECHA_REG: {
+                $gte: new Date(fechaInicio).toISOString,
+                $lte: new Date(fechaFin).toISOString
+            }
+        });
+        res.json(equipos);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // Función para convertir fecha de texto a objeto de fecha
