@@ -11,8 +11,8 @@ const EquipoSchema = new mongoose.Schema({
     LINEA: String,
     GMAIL:String,
     ESTADO_FINAL: String,
-    FECHA_REG: Date ,
-    FECHA_ESTADO_FINAL: Date
+    FECHA_REG: String,
+    FECHA_ESTADO_FINAL: String
 });
 
 const EquipoModel = mongoose.model('Equipo',EquipoSchema, 'equipo');
